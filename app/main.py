@@ -299,7 +299,7 @@ def analyze(repo: str):
 @cli.cmd
 def version():
     """Show the version of pixel-perfect."""
-    print("pixel-perfect v0.1.1")
+    print("pixel-perfect v0.2.0")
     print(f"  Provider: {cli_config.get_provider()}")
     print(f"  Model: {cli_config.get_model()}")
     print("  Nuxt MCP: enabled")

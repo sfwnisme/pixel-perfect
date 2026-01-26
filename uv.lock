@@ -2156,7 +2156,7 @@ wheels = [
 
 [[package]]
 name = "pixel-perfect"
-version = "0.1.0"
+version = "0.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "agno" },
@@ -2170,6 +2170,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pytest" },
     { name = "python-dotenv" },
+    { name = "rich" },
     { name = "sqlalchemy" },
 ]
 
@@ -2186,6 +2187,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=3.0.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "rich", specifier = ">=13.9.4" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
 ]
 
