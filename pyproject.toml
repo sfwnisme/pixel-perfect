@@ -9,6 +9,7 @@ dependencies = [
     "cli2>=5.2.3",
     "langwatch>=0.10.0",
     "langwatch-scenario>=0.7.15",
+    "mcp>=1.26.0",
     "mistralai>=1.10.1",
     "notebook>=7.5.2",
     "openai>=2.15.0",

@@ -3,6 +3,7 @@
 import langwatch
 from agno.models.mistral import MistralChat
 from agno.team.team import Team
+from agno.tools.mcp import MCPTools
 
 from app.config import key_manager, get_database
 from app.agents import (
@@ -10,23 +11,15 @@ from app.agents import (
     create_architect_agent,
     create_developer_agent,
 )
+from app.agents.developer import create_developer_agent_with_mcp
 
 
-def get_migration_team(base_dir: str = ".") -> Team:
-    """Create and configure the migration team.
-    
-    Args:
-        base_dir: Base directory for file system operations.
-        
-    Returns:
-        Configured Team with Analyzer, Architect, and Developer agents.
-    """
-    # Fetch prompt from LangWatch
+def _get_system_prompt() -> str:
+    """Fetch system prompt from LangWatch or return fallback."""
     try:
         prompt_data = langwatch.prompts.get("pixel_perfect_migration")
         system_prompt = ""
         for msg in prompt_data.messages:
-            # Handle both object and dict access for robustness
             if hasattr(msg, "role"):
                 role = msg.role
                 content = msg.content
@@ -36,10 +29,22 @@ def get_migration_team(base_dir: str = ".") -> Team:
 
             if role == "system":
                 system_prompt = content
+        return system_prompt
     except Exception as e:
-        # Fallback if prompt fetching fails
         print(f"Warning: Failed to fetch prompt from LangWatch: {e}")
-        system_prompt = "You are a migration agent expert specialized in Next.js to Nuxt.js."
+        return "You are a migration agent expert specialized in Next.js to Nuxt.js."
+
+
+def get_migration_team(base_dir: str = ".") -> Team:
+    """Create and configure the migration team (sync version).
+    
+    Args:
+        base_dir: Base directory for file system operations.
+        
+    Returns:
+        Configured Team with Analyzer, Architect, and Developer agents.
+    """
+    system_prompt = _get_system_prompt()
 
     # Create agents
     analyzer = create_analyzer_agent(base_dir)
@@ -64,6 +69,44 @@ def get_migration_team(base_dir: str = ".") -> Team:
         num_history_messages=10,
         markdown=True,
     )
+
+
+async def get_migration_team_with_mcp(base_dir: str = ".") -> tuple[Team, MCPTools]:
+    """Create migration team with Nuxt MCP for accurate code generation.
+    
+    Args:
+        base_dir: Base directory for file system operations.
+        
+    Returns:
+        Tuple of (Team, MCPTools) - MCPTools must be closed when done.
+    """
+    system_prompt = _get_system_prompt()
+
+    # Create agents (developer with MCP)
+    analyzer = create_analyzer_agent(base_dir)
+    architect = create_architect_agent()
+    developer, nuxt_mcp = await create_developer_agent_with_mcp(base_dir)
+
+    # Get model for team orchestration
+    model = MistralChat(
+        id="mistral-large-latest",
+        api_key=key_manager.get_next_key(),
+    )
+
+    # Storage for sessions
+    db = get_database()
+
+    # Team orchestration
+    team = Team(
+        members=[analyzer, architect, developer],
+        model=model,
+        instructions=system_prompt,
+        db=db,
+        num_history_messages=10,
+        markdown=True,
+    )
+
+    return team, nuxt_mcp
 
 
 # Alias for backward compatibility
