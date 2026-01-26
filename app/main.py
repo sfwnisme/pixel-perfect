@@ -224,6 +224,15 @@ def migrate(repo: str, output: str, mcp: bool = True, session_id: str = None):
     """
     # Ensure output directory exists
     output_dir = os.path.abspath(output)
+    
+    # Safety Check: Warn if directory exists and is not empty (and not resuming)
+    if os.path.exists(output_dir) and os.listdir(output_dir) and not session_id:
+        print(f"WARNING: Output directory '{output_dir}' is not empty.")
+        # Simple confirmation if interactive, or just warn
+        # Since we use cli2, we can't easily prompt unless we add a library.
+        # For now, just a strong warning is good.
+        print("Existing files may be overwritten.")
+        
     os.makedirs(output_dir, exist_ok=True)
 
     source_path = os.path.abspath(repo)

@@ -1,6 +1,6 @@
 [project]
 name = "pixel-perfect"
-version = "0.1.0"
+version = "0.2.0"
 description = "Next.js to Nuxt.js Migration Agent"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,11 +17,26 @@ dependencies = [
     "pytest>=9.0.2",
     "python-dotenv>=1.2.1",
     "sqlalchemy>=2.0.46",
+    "rich>=13.9.4",
 ]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+]
+
+[project.urls]
+Homepage = "https://github.com/Ash-Blanc/pixel-perfect"
+Repository = "https://github.com/Ash-Blanc/pixel-perfect"
+Issues = "https://github.com/Ash-Blanc/pixel-perfect/issues"
 
 [project.scripts]
 pixel-perfect = "app.main:main"
 
 [tool.setuptools.packages.find]
 include = ["app*"]
-
