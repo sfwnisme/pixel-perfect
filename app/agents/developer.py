@@ -4,6 +4,7 @@ from agno.agent import Agent
 from agno.tools.local_file_system import LocalFileSystemTools
 from agno.tools.mcp import MCPTools
 from agno.tools.models.morph import MorphTools
+from agno.tools.shell import ShellTools
 
 from app.config import get_model, key_manager
 
@@ -23,7 +24,8 @@ def create_developer_agent(base_dir: str = ".") -> Agent:
     except TypeError:
         file_tools = LocalFileSystemTools()
     
-    tools = [file_tools]
+    # Initialize tools with File system and Shell tools for scaffolding
+    tools = [file_tools, ShellTools()]
 
     # Add Morph Tools if API key is available
     morph_key = key_manager.get_key("morph")
@@ -33,7 +35,19 @@ def create_developer_agent(base_dir: str = ".") -> Agent:
 
     model = get_model()
 
-    instructions = "Implement the migration plan by converting files to Nuxt.js."
+    instructions = """Implement the migration plan by converting files to Nuxt.js.
+
+STEP 1: SCAFFOLDING (If starting fresh)
+1. Check if the output directory exists and is empty.
+2. If it needs scaffolding, use the `shell` tool to run: `npx nuxi@latest init <output_dir> --packageManager npm --gitInit false`
+3. Verify that `nuxt.config.ts` and `package.json` are created.
+
+STEP 2: MIGRATION execution
+- Convert files to proper Nuxt.js 3 structure.
+- PRIORITY: The migrated app MUST look exactly like the original.
+- Preserve all CSS classes, styles, and Tailwind configurations precisely.
+- Do not simplify or change the UI design.
+"""
     if morph_key:
         instructions += "\nUse MorphTools for fast, intelligent code editing and generation when appropriate."
 
@@ -68,9 +82,22 @@ async def create_developer_agent_with_mcp(base_dir: str = ".") -> tuple[Agent, M
     except TypeError:
         file_tools = LocalFileSystemTools()
 
-    tools = [file_tools, nuxt_mcp]
+    # Initialize tools with ShellTools for scaffolding
+    tools = [file_tools, nuxt_mcp, ShellTools()]
     
     instructions = """Implement the migration plan by converting files to Nuxt.js.
+
+STEP 1: SCAFFOLDING
+- If the output directory is empty or missing, SCALFFOLD IT FIRST.
+- Use the `shell` tool to run: `npx nuxi@latest init <output_dir> --packageManager npm --gitInit false`
+- This ensures a valid Nuxt 3 project structure.
+
+STEP 2: MIGRATION & PIXEL-PERFECT UI
+- Implement the migration plan by converting files to Nuxt.js.
+- CRITICAL: The migrated app MUST look exactly like the original.
+- Preserve all CSS classes, style attributes, and Tailwind config exactly.
+- Do not simplify the design or "clean up" styles unless necessary for Nuxt compatibility.
+- Ensure all assets (images, fonts) are placed correctly in `public/` or `assets/`.
 
 IMPORTANT: Use the Nuxt MCP tools to:
 - Look up correct Nuxt.js 3 patterns and composables
