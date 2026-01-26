@@ -63,6 +63,7 @@ def get_migration_team(base_dir: str = ".") -> Team:
         instructions=system_prompt,
         db=db,
         num_history_messages=10,
+        add_history_to_context=True,
         markdown=True,
     )
 
@@ -96,6 +97,7 @@ async def get_migration_team_with_mcp(base_dir: str = ".") -> tuple[Team, MCPToo
         instructions=system_prompt,
         db=db,
         num_history_messages=10,
+        add_history_to_context=True,
         markdown=True,
     )
 

@@ -129,7 +129,8 @@ async def _migrate_with_mcp(source_path: str, output_dir: str):
     """
 
     try:
-        await team.aprint_response(prompt, stream=True)
+        # Use interactive CLI app for multi-turn conversation
+        await team.acli_app(input=prompt, stream=True)
     finally:
         await nuxt_mcp.close()
 
@@ -172,7 +173,8 @@ def migrate(repo: str, output: str, mcp: bool = True):
         2. Architect: Create a MigrationPlan for converting to Nuxt.js in '{output_dir}'.
         3. Developer: Execute the plan and write the new files.
         """
-        team.print_response(prompt, stream=True)
+        # Use interactive CLI app for multi-turn conversation
+        team.cli_app(input=prompt, stream=True)
 
 
 @cli.cmd
