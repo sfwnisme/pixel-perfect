@@ -1,6 +1,6 @@
 """Team orchestration for the migration agents."""
 
-import langwatch
+
 from agno.team.team import Team
 from agno.tools.mcp import MCPTools
 
@@ -13,25 +13,7 @@ from app.agents import (
 from app.agents.developer import create_developer_agent_with_mcp
 
 
-def _get_system_prompt() -> str:
-    """Fetch system prompt from LangWatch or return fallback."""
-    try:
-        prompt_data = langwatch.prompts.get("pixel_perfect_migration")
-        system_prompt = ""
-        for msg in prompt_data.messages:
-            if hasattr(msg, "role"):
-                role = msg.role
-                content = msg.content
-            else:
-                role = msg.get("role")
-                content = msg.get("content")
-
-            if role == "system":
-                system_prompt = content
-        return system_prompt
-    except Exception as e:
-        print(f"Warning: Failed to fetch prompt from LangWatch: {e}")
-        return "You are a migration agent expert specialized in Next.js to Nuxt.js."
+from app.prompts import get_system_prompt
 
 
 def get_migration_team(base_dir: str = ".", session_id: str = None) -> Team:
