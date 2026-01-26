@@ -26,7 +26,7 @@ def get_migration_team(base_dir: str = ".", session_id: str = None) -> Team:
     Returns:
         Configured Team with Analyzer, Architect, and Developer agents.
     """
-    system_prompt = _get_system_prompt()
+    system_prompt = get_system_prompt()
 
     # Create agents
     analyzer = create_analyzer_agent(base_dir)
@@ -62,7 +62,7 @@ async def get_migration_team_with_mcp(base_dir: str = ".", session_id: str = Non
     Returns:
         Tuple of (Team, MCPTools) - MCPTools must be closed when done.
     """
-    system_prompt = _get_system_prompt()
+    system_prompt = get_system_prompt()
 
     # Create agents (developer with MCP)
     analyzer = create_analyzer_agent(base_dir)
