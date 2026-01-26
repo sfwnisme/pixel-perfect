@@ -1,0 +1,9 @@
+{
+  "prompts": {
+    "pixel_perfect_migration": {
+      "version": "1.0.0",
+      "materialized": "prompts/pixel_perfect_migration.yaml",
+      "versionId": "local-dev"
+    }
+  }
+}

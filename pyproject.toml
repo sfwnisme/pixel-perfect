@@ -1,0 +1,26 @@
+[project]
+name = "pixel-perfect"
+version = "0.1.0"
+description = "Next.js to Nuxt.js Migration Agent"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "agno>=2.4.3",
+    "cli2>=5.2.3",
+    "langwatch>=0.10.0",
+    "langwatch-scenario>=0.7.15",
+    "mistralai>=1.10.1",
+    "notebook>=7.5.2",
+    "openai>=2.15.0",
+    "pandas>=3.0.0",
+    "pytest>=9.0.2",
+    "python-dotenv>=1.2.1",
+    "sqlalchemy>=2.0.46",
+]
+
+[project.scripts]
+pixel-perfect = "app.main:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
