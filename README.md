@@ -24,34 +24,36 @@ Pixel Perfect is an advanced AI agent built with the Agno framework, designed to
     cd pixel-perfect
     ```
 
-2.  **Environment Setup:**
-    Ensure you have `uv` installed. If not:
+2.  **Install with uv:**
+    Install the tool globally using `uv`:
     ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    uv tool install .
     ```
 
-3.  **Install Dependencies:**
-    ```bash
-    uv sync
-    ```
-
-4.  **Configure Environment Variables:**
+3.  **Configure Environment Variables:**
     Copy `.env.example` to `.env` and populate it with your API keys.
     ```bash
     cp .env.example .env
     ```
-    Required keys:
-    - `OPENAI_API_KEY` (or other LLM provider)
-    - `LANGWATCH_API_KEY`
+    
+    You can also configure keys via the CLI:
+    ```bash
+    pixel-perfect config-key sk-proj-... openai
+    ```
 
 ## Usage
 
 ### Running the Agent
 
-To run the agent and start a migration:
+Start the interactive migration wizard:
 
 ```bash
-uv run app/main.py --repo <github-repo-url> --output <output-directory>
+pixel-perfect migrate <github-repo-url> <output-directory>
+```
+
+Example:
+```bash
+pixel-perfect migrate https://github.com/example/nextjs-app ./nuxt-app
 ```
 
 ### Running Tests
