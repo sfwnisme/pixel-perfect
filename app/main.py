@@ -70,15 +70,19 @@ def config_provider(provider: str):
 @cli.cmd(name="config-key")
 def config_key(key: str, provider: str = None):
     """
-    Add an API key for a provider.
+    Add API key(s) for a provider. Supports comma-separated keys for load balancing.
 
-    :param key: The API key to add
+    :param key: The API key(s) to add (can be comma-separated)
     :param provider: Provider name (defaults to current provider)
     """
     provider = provider or cli_config.get_provider()
     if cli_config.add_api_key(key, provider):
-        masked = f"{key[:8]}...{key[-4:]}" if len(key) > 12 else "***"
-        print(f"✓ Added key for {provider}: {masked}")
+        keys = [k.strip() for k in key.split(",") if k.strip()]
+        if len(keys) > 1:
+            print(f"✓ Added {len(keys)} keys for {provider}")
+        else:
+            masked = f"{keys[0][:8]}...{keys[0][-4:]}" if len(keys[0]) > 12 else "***"
+            print(f"✓ Added key for {provider}: {masked}")
     else:
         print(f"✗ Failed to add key for {provider}")
 

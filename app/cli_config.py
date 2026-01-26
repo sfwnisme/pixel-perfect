@@ -98,7 +98,7 @@ def get_api_keys(provider: Optional[str] = None) -> list[str]:
 
 
 def add_api_key(key: str, provider: Optional[str] = None) -> bool:
-    """Add an API key for the specified or current provider."""
+    """Add one or more API keys for the specified or current provider."""
     provider = provider or get_provider()
     if provider not in SUPPORTED_PROVIDERS:
         return False
@@ -109,11 +109,18 @@ def add_api_key(key: str, provider: Optional[str] = None) -> bool:
     if provider not in config["api_keys"]:
         config["api_keys"][provider] = []
     
-    # Don't add duplicates
-    if key not in config["api_keys"][provider]:
-        config["api_keys"][provider].append(key)
+    # Handle comma-separated keys
+    keys_to_add = [k.strip() for k in key.split(",") if k.strip()]
     
-    _save_config(config)
+    added = False
+    for k in keys_to_add:
+        # Don't add duplicates
+        if k not in config["api_keys"][provider]:
+            config["api_keys"][provider].append(k)
+            added = True
+    
+    if added:
+        _save_config(config)
     return True
 
 
