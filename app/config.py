@@ -14,6 +14,12 @@ class APIKeyManager:
     """Round-robin API key manager with CLI config support."""
 
     def __init__(self, provider: str = None):
+        """
+        Initialize the key manager.
+        
+        Args:
+            provider: The provider to manage keys for. If None, uses the globally configured provider.
+        """
         from app import cli_config
         
         self.provider = provider or cli_config.get_provider()
@@ -31,7 +37,8 @@ class APIKeyManager:
                     self.keys = [k.strip() for k in env_keys.split(",") if k.strip()]
         
         if not self.keys:
-            print(f"Warning: No API keys found for {self.provider}")
+            # We don't print warning here anymore to avoid noise when accessing auxiliary keys
+            pass
         
         self.index = 0
 
@@ -42,6 +49,12 @@ class APIKeyManager:
         key = self.keys[self.index]
         self.index = (self.index + 1) % len(self.keys)
         return key
+
+    def get_key(self, provider: str) -> Optional[str]:
+        """Get a key for a specific provider (without switching the main provider context)."""
+        # Create a temporary manager for the requested provider
+        temp_manager = APIKeyManager(provider)
+        return temp_manager.get_next_key()
 
 
 def get_model():

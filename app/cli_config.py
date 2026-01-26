@@ -41,6 +41,11 @@ SUPPORTED_PROVIDERS = {
         "model_class": "agno.models.deepseek.DeepSeek",
         "default_model": "deepseek-chat",
     },
+    "morph": {
+        "env_var": "MORPH_API_KEY",
+        "model_class": "agno.tools.models.morph.MorphTools",
+        "default_model": "morph-v3-large",
+    },
 }
 
 

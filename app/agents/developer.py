@@ -3,8 +3,9 @@
 from agno.agent import Agent
 from agno.tools.local_file_system import LocalFileSystemTools
 from agno.tools.mcp import MCPTools
+from agno.tools.models.morph import MorphTools
 
-from app.config import get_model
+from app.config import get_model, key_manager
 
 
 def create_developer_agent(base_dir: str = ".") -> Agent:
@@ -21,15 +22,27 @@ def create_developer_agent(base_dir: str = ".") -> Agent:
         file_tools = LocalFileSystemTools(target_directory=base_dir)
     except TypeError:
         file_tools = LocalFileSystemTools()
+    
+    tools = [file_tools]
+
+    # Add Morph Tools if API key is available
+    morph_key = key_manager.get_key("morph")
+    if morph_key:
+        morph_tools = MorphTools(api_key=morph_key)
+        tools.append(morph_tools)
 
     model = get_model()
+
+    instructions = "Implement the migration plan by converting files to Nuxt.js."
+    if morph_key:
+        instructions += "\nUse MorphTools for fast, intelligent code editing and generation when appropriate."
 
     return Agent(
         name="Developer",
         role="Execute the migration by writing Nuxt.js files",
         model=model,
-        tools=[file_tools],
-        instructions="Implement the migration plan by converting files to Nuxt.js.",
+        tools=tools,
+        instructions=instructions,
     )
 
 
@@ -55,14 +68,9 @@ async def create_developer_agent_with_mcp(base_dir: str = ".") -> tuple[Agent, M
     except TypeError:
         file_tools = LocalFileSystemTools()
 
-    model = get_model()
-
-    agent = Agent(
-        name="Developer",
-        role="Execute the migration by writing Nuxt.js files",
-        model=model,
-        tools=[file_tools, nuxt_mcp],
-        instructions="""Implement the migration plan by converting files to Nuxt.js.
+    tools = [file_tools, nuxt_mcp]
+    
+    instructions = """Implement the migration plan by converting files to Nuxt.js.
 
 IMPORTANT: Use the Nuxt MCP tools to:
 - Look up correct Nuxt.js 3 patterns and composables
@@ -74,7 +82,23 @@ Always generate idiomatic Nuxt.js 3 code with:
 - defineProps/defineEmits for component APIs
 - Proper Nuxt auto-imports (useFetch, useRoute, useState, etc.)
 - Correct file conventions (pages/, components/, composables/)
-""",
+"""
+
+    # Add Morph Tools if API key is available
+    morph_key = key_manager.get_key("morph")
+    if morph_key:
+        morph_tools = MorphTools(api_key=morph_key)
+        tools.append(morph_tools)
+        instructions += "\nUse MorphTools ('edit_file') for fast, intelligent code generation and refactoring."
+
+    model = get_model()
+
+    agent = Agent(
+        name="Developer",
+        role="Execute the migration by writing Nuxt.js files",
+        model=model,
+        tools=tools,
+        instructions=instructions,
     )
 
     return agent, nuxt_mcp
