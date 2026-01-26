@@ -1,5 +1,8 @@
 # Pixel Perfect: Next.js to Nuxt.js Migration Agent
 
+<img width="1169" height="779" alt="image" src="https://github.com/user-attachments/assets/86d72923-413d-4ef3-8758-d86bbbee0529" />
+
+
 Pixel Perfect is an advanced AI agent built with the Agno framework, designed to automate the conversion of Next.js applications to Nuxt.js. It analyzes an existing Next.js codebase (via GitHub URL) and reconstructs it as a high-quality, idiomatic Nuxt.js application, preserving styling and functionality.
 
 ## Features
