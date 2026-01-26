@@ -34,11 +34,12 @@ def _get_system_prompt() -> str:
         return "You are a migration agent expert specialized in Next.js to Nuxt.js."
 
 
-def get_migration_team(base_dir: str = ".") -> Team:
+def get_migration_team(base_dir: str = ".", session_id: str = None) -> Team:
     """Create and configure the migration team (sync version).
     
     Args:
         base_dir: Base directory for file system operations.
+        session_id: Optional session ID to resume.
         
     Returns:
         Configured Team with Analyzer, Architect, and Developer agents.
@@ -58,6 +59,7 @@ def get_migration_team(base_dir: str = ".") -> Team:
 
     # Team orchestration
     return Team(
+        session_id=session_id,
         members=[analyzer, architect, developer],
         model=model,
         instructions=system_prompt,
@@ -68,11 +70,12 @@ def get_migration_team(base_dir: str = ".") -> Team:
     )
 
 
-async def get_migration_team_with_mcp(base_dir: str = ".") -> tuple[Team, MCPTools]:
+async def get_migration_team_with_mcp(base_dir: str = ".", session_id: str = None) -> tuple[Team, MCPTools]:
     """Create migration team with Nuxt MCP for accurate code generation.
     
     Args:
         base_dir: Base directory for file system operations.
+        session_id: Optional session ID to resume.
         
     Returns:
         Tuple of (Team, MCPTools) - MCPTools must be closed when done.
@@ -92,6 +95,7 @@ async def get_migration_team_with_mcp(base_dir: str = ".") -> tuple[Team, MCPToo
 
     # Team orchestration
     team = Team(
+        session_id=session_id,
         members=[analyzer, architect, developer],
         model=model,
         instructions=system_prompt,

@@ -112,11 +112,76 @@ def config_model(model: str, provider: str = None):
     print(f"✓ Model for {provider} set to: {model}")
 
 
+# --- Session Commands ---
+
+@cli.cmd(name="session-list")
+def session_list():
+    """List past migration sessions."""
+    from app.config import get_database
+    from app.cli_config import CONFIG_DIR
+    import sqlite3
+    
+    db_path = CONFIG_DIR / "storage.db"
+    
+    if not db_path.exists():
+        print("No sessions found (database does not exist).")
+        return
+
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Check if table exists first
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='team_sessions'")
+        if not cursor.fetchone():
+             # Try legacy 'sessions' table or just report empty
+             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'")
+             if not cursor.fetchone():
+                 print("No sessions found.")
+                 conn.close()
+                 return
+             table = "sessions"
+        else:
+             table = "team_sessions"
+
+        cursor.execute(f"SELECT session_id, created_at, updated_at FROM {table} ORDER BY updated_at DESC LIMIT 10")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            print("No sessions found.")
+            return
+
+        print(f"{'SESSION ID':<36} | {'LAST UPDATED':<20}")
+        print("-" * 60)
+        for row in rows:
+            # row is a tuple
+            sid, created, updated = row
+            # Agno sometimes stores timestamps as floats or ints
+            print(f"{sid:<36} | {updated}")
+            
+    except Exception as e:
+        print(f"Error listing sessions: {e}")
+        print("Note: If this is a new installation, no sessions may exist yet.")
+
+
+@cli.cmd(name="session-resume")
+def session_resume(session_id: str, repo: str, output: str):
+    """
+    Resume a specific session. Requires repo and output paths context.
+    
+    :param session_id: The Session ID to resume
+    :param repo: Original repo path/URL
+    :param output: Output directory
+    """
+    migrate(repo=repo, output=output, session_id=session_id)
+
+
 # --- Migration Commands ---
 
-async def _migrate_with_mcp(source_path: str, output_dir: str):
+async def _migrate_with_mcp(source_path: str, output_dir: str, session_id: str = None):
     """Run migration with Nuxt MCP for accurate code generation."""
-    team, nuxt_mcp = await get_migration_team_with_mcp(base_dir=os.getcwd())
+    team, nuxt_mcp = await get_migration_team_with_mcp(base_dir=os.getcwd(), session_id=session_id)
 
     prompt = f"""
     I want to migrate the Next.js application located at '{source_path}' to a Nuxt.js application at '{output_dir}'.
@@ -127,22 +192,35 @@ async def _migrate_with_mcp(source_path: str, output_dir: str):
     3. Developer: Execute the plan and write the new files.
        Use the Nuxt MCP tools to look up correct patterns and best practices.
     """
+    
+    # If resuming, we might want to skip the prompt or change it?
+    # For now, if session_id is present, we still send the prompt but valid session context will be there.
+    # Actually, if resuming, user might just want to continue.
+    
+    input_text = prompt if not session_id else None
 
     try:
         # Use interactive CLI app for multi-turn conversation
-        await team.acli_app(input=prompt, stream=True)
+        if session_id:
+            print(f"Resuming session: {session_id}")
+            # When resuming, typically we don't send a massive prompt again, 
+            # we just enter the loop. But we need to connect first.
+            await team.acli_app(input=input_text, stream=True)
+        else:
+            await team.acli_app(input=prompt, stream=True)
     finally:
         await nuxt_mcp.close()
 
 
 @cli.cmd
-def migrate(repo: str, output: str, mcp: bool = True):
+def migrate(repo: str, output: str, mcp: bool = True, session_id: str = None):
     """
     Migrate a Next.js application to Nuxt.js.
 
     :param repo: GitHub repository URL or local path to the Next.js app
     :param output: Output directory for the generated Nuxt.js app
     :param mcp: Use Nuxt MCP for accurate code generation (default: True)
+    :param session_id: Resume a previous session by ID
     """
     # Ensure output directory exists
     output_dir = os.path.abspath(output)
@@ -152,8 +230,12 @@ def migrate(repo: str, output: str, mcp: bool = True):
     if repo.startswith("http"):
         repo_name = repo.split("/")[-1].replace(".git", "")
         temp_dir = f"tmp/clones/{repo_name}"
-        print(f"Cloning {repo} to {temp_dir}...")
-        run_shell_command(f"git clone {repo} {temp_dir}")
+        # Only clone if not resuming, or ensure it exists?
+        # If resuming, maybe the temp dir is gone? 
+        # For simplicity, we re-clone if needed.
+        if not os.path.exists(temp_dir):
+            print(f"Cloning {repo} to {temp_dir}...")
+            run_shell_command(f"git clone {repo} {temp_dir}")
         source_path = os.path.abspath(temp_dir)
 
     print(f"Starting migration from {source_path} to {output_dir}...")
@@ -161,20 +243,23 @@ def migrate(repo: str, output: str, mcp: bool = True):
 
     if mcp:
         print("Using Nuxt MCP for accurate code generation...")
-        asyncio.run(_migrate_with_mcp(source_path, output_dir))
+        asyncio.run(_migrate_with_mcp(source_path, output_dir, session_id))
     else:
         # Sync version without MCP
-        team = get_migration_team(base_dir=os.getcwd())
-        prompt = f"""
-        I want to migrate the Next.js application located at '{source_path}' to a Nuxt.js application at '{output_dir}'.
-        
-        Please follow this process:
-        1. Analyzer: List and analyze the files in '{source_path}'.
-        2. Architect: Create a MigrationPlan for converting to Nuxt.js in '{output_dir}'.
-        3. Developer: Execute the plan and write the new files.
-        """
-        # Use interactive CLI app for multi-turn conversation
-        team.cli_app(input=prompt, stream=True)
+        team = get_migration_team(base_dir=os.getcwd(), session_id=session_id)
+        if session_id:
+            print(f"Resuming session: {session_id}")
+            team.cli_app(input=None, stream=True)
+        else:
+            prompt = f"""
+            I want to migrate the Next.js application located at '{source_path}' to a Nuxt.js application at '{output_dir}'.
+            
+            Please follow this process:
+            1. Analyzer: List and analyze the files in '{source_path}'.
+            2. Architect: Create a MigrationPlan for converting to Nuxt.js in '{output_dir}'.
+            3. Developer: Execute the plan and write the new files.
+            """
+            team.cli_app(input=prompt, stream=True)
 
 
 @cli.cmd
@@ -193,6 +278,8 @@ def analyze(repo: str):
 
     print(f"Analyzing {source_path}...")
     
+    # Analyzer uses a separate DB or transient? 
+    # Usually single-shot, but we can make it persist if needed.
     analyzer = create_analyzer_agent(base_dir=source_path)
     analyzer.print_response(
         f"Analyze the Next.js project at '{source_path}'. List all files, identify the framework version, dependencies, and key architectural patterns.",
@@ -203,7 +290,7 @@ def analyze(repo: str):
 @cli.cmd
 def version():
     """Show the version of pixel-perfect."""
-    print("pixel-perfect v0.1.0")
+    print("pixel-perfect v0.1.1")
     print(f"  Provider: {cli_config.get_provider()}")
     print(f"  Model: {cli_config.get_model()}")
     print("  Nuxt MCP: enabled")

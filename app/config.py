@@ -94,6 +94,8 @@ def get_model():
 key_manager = APIKeyManager()
 
 
-def get_database(db_file: str = "tmp/agent_storage.db") -> SqliteDb:
+def get_database() -> SqliteDb:
     """Get the database instance for agent storage."""
-    return SqliteDb(db_file=db_file)
+    from app.cli_config import CONFIG_DIR
+    db_file = CONFIG_DIR / "storage.db"
+    return SqliteDb(db_file=str(db_file))
