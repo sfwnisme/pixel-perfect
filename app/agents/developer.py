@@ -1,11 +1,10 @@
 """Developer agent for executing the migration with Nuxt MCP support."""
 
 from agno.agent import Agent
-from agno.models.mistral import MistralChat
 from agno.tools.local_file_system import LocalFileSystemTools
 from agno.tools.mcp import MCPTools
 
-from app.config import key_manager
+from app.config import get_model
 
 
 def create_developer_agent(base_dir: str = ".") -> Agent:
@@ -23,10 +22,7 @@ def create_developer_agent(base_dir: str = ".") -> Agent:
     except TypeError:
         file_tools = LocalFileSystemTools()
 
-    model = MistralChat(
-        id="mistral-large-latest",
-        api_key=key_manager.get_next_key(),
-    )
+    model = get_model()
 
     return Agent(
         name="Developer",
@@ -59,10 +55,7 @@ async def create_developer_agent_with_mcp(base_dir: str = ".") -> tuple[Agent, M
     except TypeError:
         file_tools = LocalFileSystemTools()
 
-    model = MistralChat(
-        id="mistral-large-latest",
-        api_key=key_manager.get_next_key(),
-    )
+    model = get_model()
 
     agent = Agent(
         name="Developer",

@@ -1,11 +1,10 @@
 """Team orchestration for the migration agents."""
 
 import langwatch
-from agno.models.mistral import MistralChat
 from agno.team.team import Team
 from agno.tools.mcp import MCPTools
 
-from app.config import key_manager, get_database
+from app.config import get_database, get_model
 from app.agents import (
     create_analyzer_agent,
     create_architect_agent,
@@ -52,10 +51,7 @@ def get_migration_team(base_dir: str = ".") -> Team:
     developer = create_developer_agent(base_dir)
 
     # Get model for team orchestration
-    model = MistralChat(
-        id="mistral-large-latest",
-        api_key=key_manager.get_next_key(),
-    )
+    model = get_model()
 
     # Storage for sessions
     db = get_database()
@@ -88,10 +84,7 @@ async def get_migration_team_with_mcp(base_dir: str = ".") -> tuple[Team, MCPToo
     developer, nuxt_mcp = await create_developer_agent_with_mcp(base_dir)
 
     # Get model for team orchestration
-    model = MistralChat(
-        id="mistral-large-latest",
-        api_key=key_manager.get_next_key(),
-    )
+    model = get_model()
 
     # Storage for sessions
     db = get_database()

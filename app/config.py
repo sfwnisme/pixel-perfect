@@ -10,31 +10,29 @@ from agno.db.sqlite import SqliteDb
 load_dotenv()
 
 
-class MistralKeyManager:
-    """Round-robin API key manager for Mistral load balancing."""
+class APIKeyManager:
+    """Round-robin API key manager with CLI config support."""
 
-    def __init__(self):
-        # Try comma-separated keys first (recommended format)
-        keys_str = os.getenv("MISTRAL_API_KEYS")
-        if keys_str:
-            self.keys = [k.strip() for k in keys_str.split(",") if k.strip()]
-        else:
-            # Fallback to individual key variables
-            self.keys = [
-                os.getenv("MISTRAL_API_KEY_1"),
-                os.getenv("MISTRAL_API_KEY_2"),
-            ]
-            # Filter out None keys
-            self.keys = [k for k in self.keys if k]
-            
-            # Final fallback to single MISTRAL_API_KEY
-            if not self.keys:
-                single_key = os.getenv("MISTRAL_API_KEY")
-                if single_key:
-                    self.keys = [single_key]
-                else:
-                    print("Warning: No Mistral API keys found in environment variables.")
-
+    def __init__(self, provider: str = None):
+        from app import cli_config
+        
+        self.provider = provider or cli_config.get_provider()
+        
+        # First try CLI config
+        self.keys = cli_config.get_api_keys(self.provider)
+        
+        # Fallback to environment variables
+        if not self.keys:
+            provider_config = cli_config.SUPPORTED_PROVIDERS.get(self.provider, {})
+            env_var = provider_config.get("env_var", "")
+            if env_var:
+                env_keys = os.getenv(env_var, "")
+                if env_keys:
+                    self.keys = [k.strip() for k in env_keys.split(",") if k.strip()]
+        
+        if not self.keys:
+            print(f"Warning: No API keys found for {self.provider}")
+        
         self.index = 0
 
     def get_next_key(self) -> Optional[str]:
@@ -46,8 +44,41 @@ class MistralKeyManager:
         return key
 
 
-# Singleton instance for key management
-key_manager = MistralKeyManager()
+def get_model():
+    """Get the configured model instance based on CLI config."""
+    from app import cli_config
+    
+    provider = cli_config.get_provider()
+    model_id = cli_config.get_model(provider)
+    key_manager = APIKeyManager(provider)
+    api_key = key_manager.get_next_key()
+    
+    if provider == "mistral":
+        from agno.models.mistral import MistralChat
+        return MistralChat(id=model_id, api_key=api_key)
+    elif provider == "openai":
+        from agno.models.openai import OpenAIResponses
+        return OpenAIResponses(id=model_id, api_key=api_key)
+    elif provider == "anthropic":
+        from agno.models.anthropic import Claude
+        return Claude(id=model_id, api_key=api_key)
+    elif provider == "google":
+        from agno.models.google import Gemini
+        return Gemini(id=model_id, api_key=api_key)
+    elif provider == "groq":
+        from agno.models.groq import Groq
+        return Groq(id=model_id, api_key=api_key)
+    elif provider == "deepseek":
+        from agno.models.deepseek import DeepSeek
+        return DeepSeek(id=model_id, api_key=api_key)
+    else:
+        # Default fallback to Mistral
+        from agno.models.mistral import MistralChat
+        return MistralChat(id="mistral-large-latest", api_key=api_key)
+
+
+# Legacy support - create key manager for default provider
+key_manager = APIKeyManager()
 
 
 def get_database(db_file: str = "tmp/agent_storage.db") -> SqliteDb:

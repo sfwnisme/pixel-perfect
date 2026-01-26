@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.team import get_migration_team, get_migration_team_with_mcp
 from app.tools import run_shell_command
+from app import cli_config
 
 
 # Create CLI group
@@ -20,9 +21,94 @@ Pixel-Perfect: Next.js to Nuxt.js Migration Agent
 Automatically migrate your Next.js applications to Nuxt.js with AI-powered
 analysis, planning, and code generation.
 
-Now with Nuxt MCP integration for accurate, up-to-date Nuxt.js patterns!
+Commands:
+  migrate        - Migrate a Next.js app to Nuxt.js
+  analyze        - Analyze a Next.js project
+  config-show    - Show current configuration
+  config-provider - Set AI provider
+  config-key     - Add API key
+  config-model   - Set model
+  version        - Show version info
 """)
 
+
+# --- Config Commands ---
+
+@cli.cmd(name="config-show")
+def config_show():
+    """Show current configuration."""
+    cfg = cli_config.show_config()
+    print(f"Provider: {cfg['provider']}")
+    print(f"Model: {cfg['model']}")
+    print(f"Config file: {cfg['config_file']}")
+    print()
+    print("API Keys:")
+    for provider, keys in cfg['api_keys'].items():
+        if keys:
+            print(f"  {provider}: {', '.join(keys)}")
+    if not any(cfg['api_keys'].values()):
+        print("  (none configured)")
+    print()
+    print("Supported providers:", ", ".join(cli_config.SUPPORTED_PROVIDERS.keys()))
+
+
+@cli.cmd(name="config-provider")
+def config_provider(provider: str):
+    """
+    Set the AI provider to use.
+
+    :param provider: Provider name (mistral, openai, anthropic, google, groq, deepseek)
+    """
+    if cli_config.set_provider(provider):
+        print(f"✓ Provider set to: {provider}")
+        print(f"  Default model: {cli_config.get_model(provider)}")
+    else:
+        print(f"✗ Unknown provider: {provider}")
+        print(f"  Supported: {', '.join(cli_config.SUPPORTED_PROVIDERS.keys())}")
+
+
+@cli.cmd(name="config-key")
+def config_key(key: str, provider: str = None):
+    """
+    Add an API key for a provider.
+
+    :param key: The API key to add
+    :param provider: Provider name (defaults to current provider)
+    """
+    provider = provider or cli_config.get_provider()
+    if cli_config.add_api_key(key, provider):
+        masked = f"{key[:8]}...{key[-4:]}" if len(key) > 12 else "***"
+        print(f"✓ Added key for {provider}: {masked}")
+    else:
+        print(f"✗ Failed to add key for {provider}")
+
+
+@cli.cmd(name="config-clear")
+def config_clear(provider: str = None):
+    """
+    Clear all API keys for a provider.
+
+    :param provider: Provider name (defaults to current provider)
+    """
+    provider = provider or cli_config.get_provider()
+    cli_config.clear_api_keys(provider)
+    print(f"✓ Cleared all keys for {provider}")
+
+
+@cli.cmd(name="config-model")
+def config_model(model: str, provider: str = None):
+    """
+    Set the model to use for a provider.
+
+    :param model: Model ID (e.g., gpt-4o, claude-sonnet-4-5)
+    :param provider: Provider name (defaults to current provider)
+    """
+    provider = provider or cli_config.get_provider()
+    cli_config.set_model(model, provider)
+    print(f"✓ Model for {provider} set to: {model}")
+
+
+# --- Migration Commands ---
 
 async def _migrate_with_mcp(source_path: str, output_dir: str):
     """Run migration with Nuxt MCP for accurate code generation."""
@@ -66,6 +152,7 @@ def migrate(repo: str, output: str, mcp: bool = True):
         source_path = os.path.abspath(temp_dir)
 
     print(f"Starting migration from {source_path} to {output_dir}...")
+    print(f"Using provider: {cli_config.get_provider()}")
 
     if mcp:
         print("Using Nuxt MCP for accurate code generation...")
@@ -111,7 +198,9 @@ def analyze(repo: str):
 def version():
     """Show the version of pixel-perfect."""
     print("pixel-perfect v0.1.0")
-    print("  - Nuxt MCP integration: enabled")
+    print(f"  Provider: {cli_config.get_provider()}")
+    print(f"  Model: {cli_config.get_model()}")
+    print("  Nuxt MCP: enabled")
 
 
 def main():

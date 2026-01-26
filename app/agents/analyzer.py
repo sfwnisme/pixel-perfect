@@ -1,10 +1,9 @@
 """Analyzer agent for inspecting Next.js project structure."""
 
 from agno.agent import Agent
-from agno.models.mistral import MistralChat
 from agno.tools.local_file_system import LocalFileSystemTools
 
-from app.config import key_manager
+from app.config import get_model
 from app.tools import run_shell_command
 
 
@@ -24,10 +23,7 @@ def create_analyzer_agent(base_dir: str = ".") -> Agent:
         # Fallback for different library versions
         file_tools = LocalFileSystemTools()
 
-    model = MistralChat(
-        id="mistral-large-latest",
-        api_key=key_manager.get_next_key(),
-    )
+    model = get_model()
 
     return Agent(
         name="Analyzer",
